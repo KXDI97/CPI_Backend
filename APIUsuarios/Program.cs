@@ -33,11 +33,48 @@ if (app.Environment.IsDevelopment())
     app.MapOpenApi();
 }
 
+
 app.MapGet("/usuarios", async (AppDbContext db) =>
+    await db.Usuarios.ToListAsync());
+
+app.MapGet("/usuarios/{id}", async (string id, AppDbContext db) =>
+    await db.Usuarios.FindAsync(id) is Usuario u ? Results.Ok(u) : Results.NotFound());
+
+
+app.MapPost("/usuarios", async (Usuario usuario, AppDbContext db) =>
 {
-    var usuarios = await db.Usuarios.ToListAsync();
-    return Results.Ok(usuarios);
+    db.Usuarios.Add(usuario);
+    await db.SaveChangesAsync();
+    return Results.Created($"/usuarios/{usuario.DocIdentidad}", usuario);
 });
+
+
+app.MapPut("/usuarios/{id}", async (string id, Usuario input, AppDbContext db) =>
+{
+    var usuario = await db.Usuarios.FindAsync(id);
+    if (usuario is null) return Results.NotFound();
+
+    usuario.NomUsuario = input.NomUsuario;
+    usuario.Correo = input.Correo;
+    usuario.NumTel = input.NumTel;
+    usuario.Contrasenia = input.Contrasenia;
+    usuario.CodRol = input.CodRol;
+
+    await db.SaveChangesAsync();
+    return Results.NoContent();
+});
+
+
+app.MapDelete("/usuarios/{id}", async (string id, AppDbContext db) =>
+{
+    var usuario = await db.Usuarios.FindAsync(id);
+    if (usuario is null) return Results.NotFound();
+
+    db.Usuarios.Remove(usuario);
+    await db.SaveChangesAsync();
+    return Results.NoContent();
+});
+
 
 
 app.UseHttpsRedirection();
